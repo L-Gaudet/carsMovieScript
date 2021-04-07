@@ -20,8 +20,8 @@ int main(int argc, char *argv[]) {
   fp = fopen(argv[1], "r");
 
   if (fp == NULL) {
-    syslog(LOG_ERR, "Error: file does not exist\n");
-    fclose(fp);
+    //syslog(LOG_ERR, "Error: file does not exist\n");
+    syslog(LOG_ERR | LOG_USER, "Error: file does not exist\n");
     exit(1);
   }
 
