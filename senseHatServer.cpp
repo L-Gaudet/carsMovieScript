@@ -1,3 +1,5 @@
+/*  Make the necessary includes and set up the variables.  */
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -5,214 +7,255 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <Python.h>
-#include <string.h>
-#include <iostream>
+#include <pthread.h>
 
-// before running set environment variable:
-//     export PYTHONPATH=/home/pi/Documents
+PyObject *pyModule;
 
-
-// server side program
-
-/*
-4 functions: these call python code
-  - get pressure
-  - get temperature
-  - get humidity
-  - set message
-*/
-
-PyObject *pModule;
-
-// function to run python code to get temperature from sense hat
-double getTemperature(PyObject *pModule)
-{
-
-    double temperature = 0.0;
-
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "getTemperature");
-    if (pFunc && PyCallable_Check(pFunc)) {
-      PyObject *pValue = PyObject_CallObject(pFunc, NULL);
-    	temperature = PyFloat_AsDouble(pValue);
-    	Py_DECREF(pValue);
-    } else {
-    	PyErr_Print();
-    }
-
-    Py_DECREF(pFunc);
-
-    return temperature;
-}
-
-// function to run python code to get humidity from sense hat
-double getHumidity(PyObject *pModule)
-{
-
-    double humidity = 0.0;
-
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "getHumidity");
-    if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject *pValue = PyObject_CallObject(pFunc, NULL);
-	humidity = PyFloat_AsDouble(pValue);
-	Py_DECREF(pValue);
-    } else {
-	PyErr_Print();
-    }
-
-    Py_DECREF(pFunc);
-
-    return humidity;
-}
-
-// function to run python code to get pressure from sense hat
-double getPressure(PyObject *pModule)
-{
-
-    double pressure = 0.0;
-
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "getPressure");
-    if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject *pValue = PyObject_CallObject(pFunc, NULL);
-	pressure = PyFloat_AsDouble(pValue);
-	Py_DECREF(pValue);
-    } else {
-	PyErr_Print();
-    }
-
-    Py_DECREF(pFunc);
-
-    return pressure;
-}
-
-// need function to display message on sensehat
-// function to run python code to set message on sense hat
-char setMessage(PyObject *pModule, char *clientMsg)
-{
-
-    char *msgSet;
+double getTemperature(PyObject *pyModule){
+    double temp = 0.0;
     
-    PyObject *pArgs = PyTuple_New(1);
-    PyTuple_SetItem(pArgs, 0, PyUnicode_FromString(clientMsg));
-
-    PyObject *pFunc = PyObject_GetAttrString(pModule, "helloMsg");
+    PyObject *pFunc = PyObject_GetAttrString(pyModule, "getTemperature");
     if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
-	msgSet = PyString_AsString(pValue);
-	Py_DECREF(pValue);
+        PyObject *pValue = PyObject_CallObject(pFunc, NULL);
+        temp = PyFloat_AsDouble(pValue);
+        Py_DECREF(pValue);
     } else {
-	PyErr_Print();
-    }
-
+        PyErr_Print();
+    } 
+    //printf("%lf\n", temp);
     Py_DECREF(pFunc);
-
-    return *msgSet; // return "message set"
+    
+    return temp;
 }
 
-void *thread_function(void *client_sockfd){
-  /* read socket for command from client (ie get temperature)
-    then parse the command ie "GET TEMPERATURE"
-    if nothing matches command send error message
-    call get temperature function
-    return temperature back over the socket
-  */
-  
-  char buffer[50];
-  char opt;
-  while(1) {
-
-    read((int)client_sockfd, &opt, 10);
-
-    switch(opt) {
-      case '1':
-        sprintf(buffer, "%.2f", getTemperature(pModule)); 
-        write((int)client_sockfd, &buffer, 20);
-        break;
-
-      case '2':
-        sprintf(buffer, "%.2f", getPressure(pModule));
-        write((int)client_sockfd, &buffer, 20);
-        break;
-
-      case '3':
-        sprintf(buffer, "%.2f", getHumidity(pModule));
-        write((int)client_sockfd, &buffer, 20);
-        break;
-
-      case '4':
-        sprintf(buffer, "enter message: ");
-        write((int)client_sockfd, &buffer, 20);
-        printf("waiting for client...");
-        while(buffer=="enter message: "){
-          read((int)client_sockfd, &buffer, 50);
-        }
-        setMessage(pModule, buffer);
-        sprintf(buffer, "message set");
-        write((int)client_sockfd, &buffer, 20);
-        break;
-
-      case '5':
-        pthread_exit(NULL);
-      default:
-        sprintf(buffer, "Invalid request.");
-        write((int)client_sockfd, &buffer, 20);
+double getHumidity(PyObject *pyModule){
+    double hum = 0.0;
+    
+    PyObject *pFunc = PyObject_GetAttrString(pyModule, "getHumidity");
+    if(pFunc && PyCallable_Check(pFunc)) {
+        PyObject *pvalue = PyObject_CallObject(pFunc, NULL);
+        hum = PyFloat_AsDouble(pvalue);
+        Py_DECREF(pvalue);
+    } else {
+        PyErr_Print();
     }
-  }
+    //printf("%lf\n", hum);
+    Py_DECREF(pFunc);
+    
+    return hum;
 }
 
-int main(int argc, char *argv[]) {
-
-  int server_sockfd, client_sockfd;
-  int server_len, client_len;
-  struct sockaddr_in server_address;
-  struct sockaddr_in client_address;
-
-  int res;
-  pthread_t a_thread;
-
-
-  Py_Initialize();
-
-
-  PyObject *pName = PyUnicode_FromString("senseHatModules");
-  if (pName == NULL) {
-      PyErr_Print();
-      return -1;
-  }
-
-  pModule = PyImport_Import(pName);
-  if (pModule == NULL) {
-      PyErr_Print();
-      return -1;
-  }
-
-
-  //              network-socket, tcp (SOCK_STREAM = tcp protocol)
-  server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-  // Name the socket.
-  server_address.sin_family = AF_INET; // set protocol family
-  server_address.sin_addr.s_addr = htonl(INADDR_ANY); // sets address
-  server_address.sin_port = htons(atoi(argv[1])); // set port number
-  server_len = sizeof(server_address);
-  bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
-
-  // create connection queue
-  listen(server_sockfd, 5); // listens for connection requests (qeuau up to 5 at any one time)
-  while(1) {
-    printf("server waiting\n");
-    /*  Accept a connection.  */
-
-      client_len = sizeof(client_address); // need
-      client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_address, &client_len); // need
-
-      // threads
-      // new thread for each client to connect
-      res = pthread_create(&a_thread, NULL, thread_function, (void *)client_sockfd);
-
-  }
-  
-  Py_Finalize();
-
+double getPressure(PyObject *pyModule){
+    double press = 0.0;
+    
+    PyObject *pFunc = PyObject_GetAttrString(pyModule, "getPressure");
+    if(pFunc && PyCallable_Check(pFunc)) {
+        PyObject *pvalue = PyObject_CallObject(pFunc, NULL);
+        press = PyFloat_AsDouble(pvalue);
+        Py_DECREF(pvalue);
+    } else {
+        PyErr_Print();
+    }
+    //printf("%lf\n", press);
+    Py_DECREF(pFunc);
+    
+    return press;
 }
+
+void displayMsg(PyObject *pyModule, char *message){
+
+    PyObject *pfunc = PyObject_GetAttrString(pyModule, "displayMsg");
+    PyObject *arglist;
+    if(pfunc && PyCallable_Check(pfunc)) {
+        arglist = Py_BuildValue("(s)", message);
+        PyObject *pvalue = PyObject_CallObject(pfunc, arglist);
+        Py_DECREF(pvalue);
+        Py_DECREF(arglist);
+    } else {
+        PyErr_Print();
+    }
+    Py_DECREF(pfunc);
+    
+    return;
+   
+}
+
+void *thread_function(void* thread_arg){
+    
+     PyObject *pModule;
+     pModule = pyModule;
+    
+    int socketfd = *(int *)thread_arg;
+    char commandstr[128];
+    
+    char cmd[32];
+    char option[32];
+    
+    char temp[128];
+    char hum[128];
+    char press[128];
+    
+    
+    while(1){
+    
+        if((read(socketfd, commandstr, sizeof(commandstr))) == -1){
+            perror("Error: ");
+            printf("error reading socket\n");
+            exit(-1);
+        }
+        
+        sscanf(commandstr, "%s %s", cmd, option);
+        //printf("cmd=%s;\n", cmd);
+        //printf("option=%s;\n", option);
+        
+        
+        if(strcmp(cmd, "GET") == 0){
+            if(strcmp(option, "TEMPERATURE") == 0){
+                //printf("Temperature: %lf \n", getTemperature(pModule));
+                sprintf(temp, "%lf", getTemperature(pModule));
+                //Py_Finalize();
+                write(socketfd, temp, sizeof(temp));
+                
+            }
+            else if(strcmp(option, "HUMIDITY") == 0){
+                //char hum[128];
+                //printf("Humidity = %lf \n", getHumidity(pModule));
+                sprintf(hum, "%lf", getHumidity(pModule));
+                //Py_Finalize();
+                write(socketfd, hum, sizeof(hum));
+                
+            }
+            else if(strcmp(option, "PRESSURE") == 0){
+                //char press[128];
+                //printf("Pressure = %lf \n", getPressure(pModule));
+                sprintf(press, "%lf", getPressure(pModule));
+                write(socketfd, press, sizeof(press));
+                
+            }
+            else{
+                printf("invalid input\n");  
+                exit(-1);
+            }
+        }
+        else if(strcmp(cmd, "SET") == 0){
+            displayMsg(pModule, option);
+            write(socketfd, option, sizeof(option));
+        }
+        else if(strcmp(cmd, "EXIT") == 0){
+            //printf("EXIT");
+            
+            write(socketfd, "closing", sizeof("closing"));
+            close(socketfd);
+            pthread_exit(NULL);
+            
+        }
+        else{
+            printf("invalid input\n");
+            exit(-1);
+        }
+        
+
+    }
+    
+    close(socketfd);
+    
+    pthread_exit(NULL);
+    
+    
+    
+    //parse command string for command (GET or SHOW)
+    //check to see that command is a valid command
+    //if invalid send message back to client over socket that it is an invalid command
+        //*******    //loop back and read again
+    //if command is GET verify valid option 
+    //if option TEMP call getTemperature() 
+        //return temperatire back to client over socket
+    //if option PRESSURE call getPressure()
+        //return pressure to client over socket
+    //if option HUMIDITY call getHumidity()
+        //return humidity to client over socket
+    //if command is SHOW then call fucntion to display message (showMessage)
+        //return message to client over socket
+}
+
+int main(int argc, char *argv[])
+{
+    //printf("ipadd=%s:\n", argv[1]);
+    
+    Py_Initialize();
+    
+    
+    PyObject *pyname = PyUnicode_FromString("senseHatModule");
+    if(pyname == NULL){
+        PyErr_Print();
+        exit(-1);
+    }
+    
+    pyModule = PyImport_Import(pyname);
+    if(pyModule == NULL){
+        PyErr_Print();
+        exit(-1);
+    }
+    
+    int port = atoi(argv[2]);
+    
+    int server_sockfd, client_sockfd;
+    socklen_t server_len, client_len;
+    struct sockaddr_in server_address;
+    
+    struct sockaddr_in client_address;
+    
+    pthread_t tid;
+
+        //command line ipaddr
+        
+
+/*  Remove any old socket and create an unnamed socket for the server.  */
+
+    server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+/*  Name the socket.  */
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = inet_addr(argv[1]);
+    //change port
+    server_address.sin_port = htons(port);
+    
+    server_len = sizeof(server_address);
+    bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
+    
+    //put python module here 
+
+/*  Create a connection queue and wait for clients.  */
+
+    listen(server_sockfd, 5);
+    while(1) {
+
+        printf("server waiting\n");
+
+/*  Accept a connection.  */
+
+        client_len = sizeof(client_address);
+        
+        //clients side: i want to talk server
+        //accept connection -- create new thread to talk to client
+        //main will wait for another client to show up
+        client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_address, &client_len);
+        printf("Socket fd accept: %d\n", client_sockfd);
+        
+    
+        int res;
+        res = pthread_create(&tid, NULL, thread_function, (void *)&client_sockfd);
+        if (res != 0){
+            perror("Thread creation failed\n");
+            exit(-1);
+        }
+    
+    }
+    
+    
+    Py_Finalize();
+    exit(0);
+}
+

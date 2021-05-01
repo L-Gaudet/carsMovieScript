@@ -1,120 +1,104 @@
+
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <iostream>
+#include <Python.h>
 
-// client side program
-
-
-int main(int argc, char *argv[]); {
-
-    int sockfd;
-    int len;
-    struct sockaddr_in address;
-    int result;
-    char opt[];
-
-
-    // Create a socket for client
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    // name socket same as server
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(atoi(argv[1]));
-    address.sin_port = htons(atoi(argv[2]));
-    len = sizeof(address);
-
-    // attach socket to server's socket
-    result = connect(sockfd, (struct sockaddr *)&address, len);
-
-    // error handling
-    if(result == -1) {
-        perror("oops: connect failed");
-        exit(1);
-    }
-
-    while(1){
-      cout << "\nSenseHat Menu" << endl;
-      cout << "--------------------" << endl;
-      cout << "1. Get Temperature" << endl;
-      cout << "2. Get Pressure" << endl;
-      cout << "3. Get Humidity" << endl;
-      cout << "4. Set Message" << endl;
-      cout << "5. Exit" << endl;
-      cout << "\nEnter Option: ";
-      cin >> opt;
-      cout << endl;
-
-      switch(opt) {
-        case "1":
-          opt = "Get Temperature";
-          write(sockfd, &opt, 20);
-          cout << "waiting for server...\n" << endl;
-          while(opt=="Get Temperature"){
-              read(sockfd, &opt, 20);
-          }
-          cout << "Temperature is: " << opt << endl;
-          break;
-
-        case "2":
-          opt = "Get Pressure";
-          write(sockfd, &opt, 20);
-          cout << "waiting for server...\n" << endl;
-          while(opt=="Get Pressure"){
-              read(sockfd, &opt, 20);
-          }
-          cout << "Pressure is: " << opt << endl;
-          break;
-
-        case "3":
-          opt = "Get Humidity";
-          write(sockfd, &opt, 20);
-          cout << "waiting for server...\n" << endl;
-          while(opt=="Get Humidity"){
-              read(sockfd, &opt, 20);
-          }
-          cout << "Humidity is: " << opt << endl;
-          break;
-
-        case "4":
-          opt = "Set Message";
-          write(sockfd, &otp, 20);
-          cout << "waiting for server...\n" << endl;
-          while(opt=="Set Message"){
-              read(sockfd, &opt, 20);
-          }
-          cout << opt;
-          cin >> opt;
-          cout << endl;
-          char[] msg = opt;
-          write(sockfd, &opt, 50);
-          cout << "waiting for server...\n" << endl;
-          while(opt==msg){
-              read(sockfd, &opt, 20);
-          }
-          cout << opt << endl;
-          break;
-
-        case "5":
-          opt = "Exit";
-          write(sockfd, &opt, 20);
-          exit(99);
-
-        default:
-          char[] invalid = opt;
-          write(sockfd, &opt, 20);
-          cout << "waiting for server...\n" << endl;
-          while(opt==invalid){
-              read(sockfd, &opt, 20);
-          }
-          cout << opt << endl;
-      }
-      cout << "\n\n"; 
-
-    }
-
+int main(int argc, char *argv[])
+{
+	int port = atoi(argv[2]);
+	int result;
+	
+	//printf("ippadd=%s:\n", argv[1]);
+	
+	int client_sockfd;
+	int client_len;
+	struct sockaddr_in client_address;
+	char buffer[1024];
+	char buffer2[1024] ;
+	
+	//check this code
+	client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	
+	client_address.sin_family = AF_INET;
+	client_address.sin_addr.s_addr = inet_addr(argv[1]);
+	
+	client_address.sin_port = htons(port);
+	
+	client_len = sizeof(client_address);
+	
+	result = connect(client_sockfd, (struct sockaddr *)&client_address, client_len);
+	
+	if(result == -1){
+		perror("oops error\n");
+		exit(-1);
+	}
+	
+	char gt[128] = "GET TEMPERATURE";
+	char gp[128] = "GET PRESSURE";
+	char gh[128] = "GET HUMIDITY";
+	char e[128] = "EXIT EXIT";
+	
+	while(1){
+		
+		int x;
+		
+		printf("\nSenseHat Menu\n");
+		printf("--------------------------------\n");
+		printf("1. Get Temperature\n");
+		printf("2. Get Pressure\n");
+		printf("3. Get Humidity\n");
+		printf("4. Set Message\n");
+		printf("5. Exit\n");
+		
+		printf("enter option: ");
+		
+		scanf("%d", &x);
+		
+		if(x == 1){
+			//check the write
+			write(client_sockfd, &gt, sizeof(gt));
+			read(client_sockfd, buffer, 1024);
+			printf("SenseHat Temperature = %s\n", buffer);
+			
+		} 
+		else if(x == 2){
+			write(client_sockfd, &gp, sizeof(gp));
+			read(client_sockfd, buffer, 1024);
+			printf("SenseHat Pressure = %s\n\n", buffer);
+			
+		}
+		else if(x == 3){
+			write(client_sockfd, &gh, sizeof(gh));
+			read(client_sockfd, buffer, 1024);
+			printf("SenseHat Humidity = %s\n", buffer);
+			
+		}
+		else if(x == 4){
+			printf("Enter message: \n");
+			scanf("%s", buffer);
+			sprintf(buffer2, "%s %s", "SET", buffer);
+			write(client_sockfd, buffer2, strlen(buffer2)+1);
+			read(client_sockfd, buffer, 1024);
+			printf("SenseHat Message = %s\n", buffer);
+		}
+		else if(x == 5){
+			write(client_sockfd, &e, strlen(e)+1);
+			read(client_sockfd, buffer, 1024);
+			printf("%s\n", buffer);
+			close(client_sockfd);
+			exit(0);
+		}
+		else{
+			printf("invalid input\n");
+			exit(-1);
+		}
+		
+	}
+	
+	exit(0);
 }
