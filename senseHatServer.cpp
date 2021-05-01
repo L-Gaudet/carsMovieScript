@@ -88,14 +88,17 @@ double getPressure(PyObject *pModule)
 
 // need function to display message on sensehat
 // function to run python code to set message on sense hat
-double setMessage(PyObject *pModule, char clientMsg)
+char setMessage(PyObject *pModule, char *clientMsg)
 {
 
-    char msgSet[];
+    char msgSet[50];
+    
+    PyObject *pArgs = PyTuple_New(1);
+    PyTuple_SetItem(pArgs, 0, PyUnicode_FromString(clientMsg));
 
     PyObject *pFunc = PyObject_GetAttrString(pModule, "helloMsg");
     if (pFunc && PyCallable_Check(pFunc)) {
-        PyObject *pValue = PyObject_CallObject(pFunc, clientMsg);
+        PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
 	msgSet = pValue;
 	Py_DECREF(pValue);
     } else {
@@ -114,7 +117,7 @@ void *thread_function(void *arg){
     call get temperature function
     return temperature back over the socket
   */
-  char buffer[];
+  char buffer[50];
   while(1) {
 
     read(client_sockfd, &buffer, 20);
@@ -209,8 +212,10 @@ int main(int argc, char *argv[]) {
 
       // threads
       // new thread for each client to connect
-      res = pthread_create(&a_thread, NULL, thread_function, (void *)message);
+      res = pthread_create(&a_thread, NULL, thread_function, (doublevoid *)message);
 
   }
+  
+  Py_Finalize();
 
 }
