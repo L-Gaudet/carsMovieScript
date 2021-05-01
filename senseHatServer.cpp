@@ -91,7 +91,7 @@ double getPressure(PyObject *pModule)
 char setMessage(PyObject *pModule, char *clientMsg)
 {
 
-    char msgSet[50];
+    char *msgSet;
     
     PyObject *pArgs = PyTuple_New(1);
     PyTuple_SetItem(pArgs, 0, PyUnicode_FromString(clientMsg));
@@ -99,7 +99,7 @@ char setMessage(PyObject *pModule, char *clientMsg)
     PyObject *pFunc = PyObject_GetAttrString(pModule, "helloMsg");
     if (pFunc && PyCallable_Check(pFunc)) {
         PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
-	msgSet = pValue;
+	msgSet = PyString_AsString(pValue);
 	Py_DECREF(pValue);
     } else {
 	PyErr_Print();
@@ -107,7 +107,7 @@ char setMessage(PyObject *pModule, char *clientMsg)
 
     Py_DECREF(pFunc);
 
-    return msgSet; // return "message set"
+    return *msgSet; // return "message set"
 }
 
 void *thread_function(void *arg){
