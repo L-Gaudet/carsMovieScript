@@ -110,7 +110,7 @@ char setMessage(PyObject *pModule, char *clientMsg)
     return *msgSet; // return "message set"
 }
 
-void *thread_function(void *arg){
+void *thread_function(void *client_sockfd){
   /* read socket for command from client (ie get temperature)
     then parse the command ie "GET TEMPERATURE"
     if nothing matches command send error message
@@ -118,48 +118,44 @@ void *thread_function(void *arg){
     return temperature back over the socket
   */
   char buffer[50];
+  char opt;
   while(1) {
 
-    read(client_sockfd, &buffer, 20);
+    read((int)client_sockfd, &opt, 10);
 
-    switch(buffer) {
-      case "Get Temperature":
+    switch(opt) {
+      case '1':
         buffer = std::to_string(getTemperature(pModule));
-        write(client_sockfd, &buffer, 20);
+        write((int)client_sockfd, &buffer, 20);
         break;
 
-      case "Get Pressure":
+      case '2':
         buffer = std::to_string(getPressure(pModule));
-        write(client_sockfd, &buffer, 20);
+        write((int)client_sockfd, &buffer, 20);
         break;
 
-      case "Get Humidity":
+      case '3':
         buffer = std::to_string(getHumidity(pModule));
-        write(client_sockfd, &buffer, 20);
+        write((int)client_sockfd, &buffer, 20);
         break;
 
-      case "Get Pressure":
-        buffer = std::to_string(getPressure(pModule));
-        write(client_sockfd, &buffer, 20);
-        break;
-
-      case "Set Message":
+      case '4':
         buffer = "enter message: ";
-        write(client_sockfd, &buffer, 20)
+        write((int)client_sockfd, &buffer, 20)
         cout << "waiting for client..." << endl;
         while(buffer=="enter message: "){
-          read(client_sockfd, &buffer, 50);
+          read((int)client_sockfd, &buffer, 50);
         }
         setMessage(pModule, buffer);
         buffer = "message set";
-        write(client_sockfd, &buffer, 20);
+        write((int)client_sockfd, &buffer, 20);
         break;
 
-      case "Exit":
+      case '5':
         pthread_exit(NULL);
       default:
         buffer = "Invalid request.";
-        write(client_sockfd, &buffer, 20);
+        write((int)client_sockfd, &buffer, 20);
     }
   }
 }
@@ -212,7 +208,7 @@ int main(int argc, char *argv[]) {
 
       // threads
       // new thread for each client to connect
-      res = pthread_create(&a_thread, NULL, thread_function, (doublevoid *)message);
+      res = pthread_create(&a_thread, NULL, thread_function, (void *)client_sockfd);
 
   }
   
