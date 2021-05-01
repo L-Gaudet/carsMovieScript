@@ -117,6 +117,7 @@ void *thread_function(void *client_sockfd){
     call get temperature function
     return temperature back over the socket
   */
+  
   char buffer[50];
   char opt;
   while(1) {
@@ -125,24 +126,24 @@ void *thread_function(void *client_sockfd){
 
     switch(opt) {
       case '1':
-        buffer = std::to_string(getTemperature(pModule));
+        sprintf(buffer, "%.2f", getTemperature(pModule)); 
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '2':
-        buffer = std::to_string(getPressure(pModule));
+        sprintf(buffer, "%.2f", getPressure(pModule));
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '3':
-        buffer = std::to_string(getHumidity(pModule));
+        sprintf(buffer, "%.2f", getHumidity(pModule));
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '4':
         buffer = "enter message: ";
-        write((int)client_sockfd, &buffer, 20)
-        cout << "waiting for client..." << endl;
+        write((int)client_sockfd, &buffer, 20);
+        printf("waiting for client...");
         while(buffer=="enter message: "){
           read((int)client_sockfd, &buffer, 50);
         }
