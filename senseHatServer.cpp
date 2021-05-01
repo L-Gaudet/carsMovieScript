@@ -154,6 +154,7 @@ void *thread_function(void *client_sockfd){
 
       case '5':
         pthread_exit(NULL);
+        close((int)client_sockfd);
       default:
         sprintf(buffer, "Invalid request.");
         write((int)client_sockfd, &buffer, 20);
@@ -164,9 +165,13 @@ void *thread_function(void *client_sockfd){
 int main(int argc, char *argv[]) {
 
   int server_sockfd, client_sockfd;
-  int server_len, client_len;
+  //int server_len, client_lenatoi(argv[1]);
   struct sockaddr_in server_address;
   struct sockaddr_in client_address;
+  socklen_t server_len, client_len;
+  
+  
+  int port = atoi(argv[1]);
 
   int res;
   pthread_t a_thread;
@@ -194,7 +199,7 @@ int main(int argc, char *argv[]) {
   // Name the socket.
   server_address.sin_family = AF_INET; // set protocol family
   server_address.sin_addr.s_addr = htonl(INADDR_ANY); // sets address
-  server_address.sin_port = htons(atoi(argv[1])); // set port number
+  server_address.sin_port = htons(port); // set port number
   server_len = sizeof(server_address);
   bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
 
@@ -214,5 +219,5 @@ int main(int argc, char *argv[]) {
   }
   
   Py_Finalize();
-
+  exit(69);
 }

@@ -6,17 +6,22 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
 
 // client side program
 
+using namespace std;
 
-int main(int argc, char *argv[]); {
+int main(int argc, char *argv[]) {
 
     int sockfd;
     int len;
     struct sockaddr_in address;
     int result;
-    char opt[];
+    char opt;
+    char buffer[20];
+    char *ip = argv[1];
+    int port = atoi(argv[2]);
 
 
     // Create a socket for client
@@ -24,8 +29,8 @@ int main(int argc, char *argv[]); {
 
     // name socket same as server
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(atoi(argv[1]));
-    address.sin_port = htons(atoi(argv[2]));
+    address.sin_addr.s_addr = inet_addr(ip);
+    address.sin_port = htons(port);
     len = sizeof(address);
 
     // attach socket to server's socket
@@ -50,68 +55,70 @@ int main(int argc, char *argv[]); {
       cout << endl;
 
       switch(opt) {
-        case "1":
-          opt = "Get Temperature";
+        case '1':
+          sprintf(buffer, "Get Temperature");
           write(sockfd, &opt, 20);
           cout << "waiting for server...\n" << endl;
-          while(opt=="Get Temperature"){
-              read(sockfd, &opt, 20);
+          while(buffer=="Get Temperature"){
+              read(sockfd, &buffer, 20);
           }
           cout << "Temperature is: " << opt << endl;
           break;
 
-        case "2":
-          opt = "Get Pressure";
-          write(sockfd, &opt, 20);
+        case '2':
+          sprintf(buffer, "Get Pressure");
+          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(opt=="Get Pressure"){
+          while(buffer=="Get Pressure"){
               read(sockfd, &opt, 20);
           }
           cout << "Pressure is: " << opt << endl;
           break;
 
-        case "3":
-          opt = "Get Humidity";
-          write(sockfd, &opt, 20);
+        case '3':
+          sprintf(buffer, "Get Humidity");
+          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(opt=="Get Humidity"){
-              read(sockfd, &opt, 20);
+          while(buffer=="Get Humidity"){
+              read(sockfd, &buffer, 20);
           }
           cout << "Humidity is: " << opt << endl;
           break;
 
-        case "4":
-          opt = "Set Message";
-          write(sockfd, &otp, 20);
+        case '4':
+          sprintf(buffer, "Set Message");
+          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(opt=="Set Message"){
-              read(sockfd, &opt, 20);
+          while(buffer=="Set Message"){
+              read(sockfd, &buffer, 20);
           }
-          cout << opt;
-          cin >> opt;
+          cout << buffer;
+          cin >> buffer;
           cout << endl;
-          char[] msg = opt;
-          write(sockfd, &opt, 50);
+          char msg[50];
+          sprintf(msg, buffer);
+          write(sockfd, &buffer, 50);
           cout << "waiting for server...\n" << endl;
-          while(opt==msg){
-              read(sockfd, &opt, 20);
+          while(buffer==msg){
+              read(sockfd, &buffer, 20);
           }
-          cout << opt << endl;
+          cout << buffer << endl;
           break;
 
-        case "5":
-          opt = "Exit";
-          write(sockfd, &opt, 20);
+        case '5':
+          sprintf(buffer, "Exit");
+          write(sockfd, &buffer, 20);
           exit(99);
 
         default:
-          char[] invalid = opt;
-          write(sockfd, &opt, 20);
+          char invalid[50];
+           sprintf(invalid, buffer);
+          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(opt==invalid){
-              read(sockfd, &opt, 20);
+          while(buffer==invalid){
+              read(sockfd, &buffer, 20);
           }
-          cout << opt << endl;
+          cout << buffer << endl;
       }
       cout << "\n\n"; 
 
