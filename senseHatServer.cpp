@@ -141,21 +141,21 @@ void *thread_function(void *client_sockfd){
         break;
 
       case '4':
-        buffer = "enter message: ";
+        sprintf(buffer, "enter message: ");
         write((int)client_sockfd, &buffer, 20);
         printf("waiting for client...");
         while(buffer=="enter message: "){
           read((int)client_sockfd, &buffer, 50);
         }
         setMessage(pModule, buffer);
-        buffer = "message set";
+        sprintf(buffer, "message set");
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '5':
         pthread_exit(NULL);
       default:
-        buffer = "Invalid request.";
+        sprintf(buffer, "Invalid request.");
         write((int)client_sockfd, &buffer, 20);
     }
   }
