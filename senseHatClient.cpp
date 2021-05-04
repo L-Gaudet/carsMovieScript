@@ -53,75 +53,51 @@ int main(int argc, char *argv[]) {
       cout << "\nEnter Option: ";
       cin >> opt;
       cout << endl;
-
+      
+      // sends client choice to server
+      write(sockfd, &opt, 1);
+      
+      // each case handles a different option 
       switch(opt) {
         case '1':
-          sprintf(buffer, "Get Temperature");
-          write(sockfd, &opt, 20);
           cout << "waiting for server...\n" << endl;
-          while(buffer=="Get Temperature"){
-              read(sockfd, &buffer, 20);
-          }
-          cout << "Temperature is: " << opt << endl;
+          read(sockfd, &buffer, 20);
+          cout << "Temperature is: " << buffer << endl;
           break;
 
         case '2':
-          sprintf(buffer, "Get Pressure");
-          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(buffer=="Get Pressure"){
-              read(sockfd, &opt, 20);
-          }
-          cout << "Pressure is: " << opt << endl;
+          read(sockfd, &buffer, 20);
+          cout << "Pressure is: " << buffer << endl;
           break;
 
         case '3':
-          sprintf(buffer, "Get Humidity");
-          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(buffer=="Get Humidity"){
-              read(sockfd, &buffer, 20);
-          }
-          cout << "Humidity is: " << opt << endl;
+          read(sockfd, &buffer, 20);
+          cout << "Humidity is: " << buffer << endl;
           break;
 
         case '4':
-          sprintf(buffer, "Set Message");
-          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(buffer=="Set Message"){
-              read(sockfd, &buffer, 20);
-          }
+          read(sockfd, &buffer, 20);
           cout << buffer;
           cin >> buffer;
           cout << endl;
-          char msg[50];
-          sprintf(msg, buffer);
           write(sockfd, &buffer, 50);
           cout << "waiting for server...\n" << endl;
-          while(buffer==msg){
-              read(sockfd, &buffer, 20);
-          }
+          read(sockfd, &buffer, 20);
           cout << buffer << endl;
           break;
 
         case '5':
           sprintf(buffer, "Exit");
-          write(sockfd, &buffer, 20);
           exit(99);
 
         default:
-          char invalid[50];
-           sprintf(invalid, buffer);
-          write(sockfd, &buffer, 20);
           cout << "waiting for server...\n" << endl;
-          while(buffer==invalid){
-              read(sockfd, &buffer, 20);
-          }
+          read(sockfd, &buffer, 20);
           cout << buffer << endl;
       }
-      cout << "\n\n"; 
-
     }
 
 }

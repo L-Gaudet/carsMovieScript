@@ -10,9 +10,6 @@
 #include <string.h>
 #include <iostream>
 
-// before running set environment variable:
-//     export PYTHONPATH=/home/pi/Documents
-
 
 // server side program
 
@@ -88,7 +85,7 @@ double getPressure(PyObject *pModule)
 
 // need function to display message on sensehat
 // function to run python code to set message on sense hat
-char setMessage(PyObject *pModule, char *clientMsg)
+void setMessage(PyObject *pModule, char *clientMsg)
 {
 
     char *msgSet;
@@ -107,7 +104,7 @@ char setMessage(PyObject *pModule, char *clientMsg)
 
     Py_DECREF(pFunc);
 
-    return *msgSet; // return "message set"
+    // void doesnt return anything 
 }
 
 void *thread_function(void *client_sockfd){
@@ -122,43 +119,52 @@ void *thread_function(void *client_sockfd){
   char opt;
   while(1) {
 
-    read((int)client_sockfd, &opt, 10);
+    read((int)client_sockfd, &opt, 1);
+    
+    //std::cout << opt << std::endl; used for debugging 
 
     switch(opt) {
       case '1':
         sprintf(buffer, "%.2f", getTemperature(pModule)); 
+        //std::cout << buffer << std::endl; // used for debugging 
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '2':
         sprintf(buffer, "%.2f", getPressure(pModule));
+        //std::cout << buffer << std::endl; // used for debugging 
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '3':
         sprintf(buffer, "%.2f", getHumidity(pModule));
+        //std::cout << buffer << std::endl; // used for debugging 
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '4':
         sprintf(buffer, "enter message: ");
+        //std::cout << buffer << std::endl; // used for debugging 
         write((int)client_sockfd, &buffer, 20);
-        printf("waiting for client...");
-        while(buffer=="enter message: "){
-          read((int)client_sockfd, &buffer, 50);
-        }
+        std::cout << "waiting for client..." << std::endl;
+        read((int)client_sockfd, &buffer, 50);
+        //std::cout << buffer << std::endl; // used for debugging
         setMessage(pModule, buffer);
+        //std::cout << buffer << std::endl; // used for debugging
         sprintf(buffer, "message set");
+        //std::cout << buffer << std::endl; // used for debugging
         write((int)client_sockfd, &buffer, 20);
         break;
 
       case '5':
         pthread_exit(NULL);
-        close((int)client_sockfd);
+        //close((int)client_sockfd);
       default:
-        sprintf(buffer, "Invalid request.");
+        sprintf(buffer, "Invalid request.\n");
+        std::cout << buffer << std::endl; // used for debugging 
         write((int)client_sockfd, &buffer, 20);
     }
+    //free(buffer);
   }
 }
 
@@ -219,5 +225,5 @@ int main(int argc, char *argv[]) {
   }
   
   Py_Finalize();
-  exit(69);
+  exit(60);
 }
